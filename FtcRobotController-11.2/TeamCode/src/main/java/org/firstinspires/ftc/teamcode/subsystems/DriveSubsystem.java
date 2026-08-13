@@ -14,11 +14,15 @@ import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.Pose2D;
 import org.firstinspires.ftc.teamcode.TurtleOpMode;
+import org.firstinspires.ftc.teamcode.turtleUtils.PIDController;
 
 public class DriveSubsystem extends OdometrySubsystem{
     Telemetry telemetry;
     DcMotorEx leftFront, rightFront, leftRear, rightRear;
     boolean isRobotAtTarget = false;
+
+    PIDController translationalController = new PIDController(0.15, 0, 0.05);
+    PIDController rotationalController = new PIDController(.05, 0, 0);
 
     /**
      * Assumes Drive Motors are configured as leftFront, rightFront, leftRear, and rightRear
@@ -64,7 +68,7 @@ public class DriveSubsystem extends OdometrySubsystem{
         double angleOfDistance = Math.atan2(distanceAwayY, distanceAwayX);
 
         //Make sure it drives in a straight line
-        double translationOutput = pidCalculate(0.15, 0, 0.05, distanceAway, 0);
+        double translationOutput = translationalController.calculate(distanceAway, 0);
         translationOutput = Math.copySign(Math.min(Math.abs(translationOutput), 1), distanceAway);
 
         //Set New Rotation so it can cross -180
@@ -81,7 +85,7 @@ public class DriveSubsystem extends OdometrySubsystem{
         }
 
         //Power needed in each direction
-        double rotPow = -pidCalculate(.05, 0, 0, currentAngle, targetAngle);
+        double rotPow = -rotationalController.calculate(currentAngle, targetAngle);
         double xPow = translationOutput * Math.cos(angleOfDistance);
         double yPow = -translationOutput * Math.sin(angleOfDistance);
 
@@ -102,13 +106,6 @@ public class DriveSubsystem extends OdometrySubsystem{
 
     public boolean isRobotAtTarget() {
         return isRobotAtTarget;
-    }
-
-    private double pidCalculate(double p, double i, double d, double currentPoint, double setpoint) {
-        double error = setpoint - currentPoint;
-        double power = error * p;
-
-        return power;
     }
 
     // This routine drives the robot field relative
