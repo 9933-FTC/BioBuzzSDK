@@ -21,30 +21,10 @@ public class BasicTeleOp extends TurtleOpMode {
         else{
             intake.stop();
         }
-        if(gamepad1.right_trigger>.25) {
-            shooter.spinUp(2000);
-        }
-        else {
-            shooter.stop();
-        }
-            if (gamepad1.a) {
-                delivery.beltMove(100);
-                delivery.ShooterDelivtobelt(20);
-            } else if (gamepad1.left_bumper) {
-                delivery.beltMove(100);
-            }
-            else {
-                delivery.stop();
-            }
-
 
         if(gamepad1.start){
             drive.seedPose(0,0,0);
         }
-        if (gamepad1.b) {
-            delivery.ShooterDelivArm(1);
-        } else {
-            delivery.ShooterDelivArm(0);
-        }
+
     }
 }

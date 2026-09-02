@@ -13,16 +13,11 @@ public class TurtleOpMode extends OpMode {
     DriveSubsystem drive;
     IntakeSubSystem intake;
 
-    ShooterSubSystem shooter;
-
-    DeliverySubSystem delivery;
     @Override
     public void init() {
 
         drive = new DriveSubsystem(telemetry, hardwareMap);
         intake = new IntakeSubSystem(telemetry,hardwareMap);
-        shooter = new ShooterSubSystem(telemetry,hardwareMap);
-        delivery = new DeliverySubSystem(telemetry, hardwareMap);
     }
 
     @Override
