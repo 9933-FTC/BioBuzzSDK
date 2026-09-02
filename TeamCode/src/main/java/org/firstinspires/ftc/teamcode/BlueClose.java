@@ -20,26 +20,22 @@ public class BlueClose extends TurtleOpMode {
         super.loop();
         telemetry.addLine("Step: " + step);
 
-        switch (step) {
+        if(step == 0) {
+
+            drive.seedPose(0, 0, 0);
+            step = 10;
+        } else if (step == 10) {
 
 
-            case 0:
-
-                drive.seedPose(0,0,0);
-                step = 10;
-                break;
-            case 10:
-
-                intake.start();
-                drive.driveToPose(12, 12, 90);
-                if (drive.isRobotAtTarget()) {
-                    step = 20;
-                }
-                break;
-            case 20:
-                intake.stop();
-                break;
-
+            drive.driveToPose(12, 12, 90);
+            if (drive.isRobotAtTarget()) {
+                step = 20;
+            }
+        } else if (step == 20) {
+            drive.driveToPose(24, 24, 60);
+            if (drive.isRobotAtTarget()) {
+                step = 30;
+            }
         }
 
 
