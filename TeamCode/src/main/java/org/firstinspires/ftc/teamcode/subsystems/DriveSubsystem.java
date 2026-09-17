@@ -41,7 +41,7 @@ public class DriveSubsystem {
         leftRear.setDirection(DcMotorSimple.Direction.REVERSE);
 
 
-        pinpoint = hardwareMap.get(GoBildaPinpointDriver.class, "pinpoint");
+          pinpoint = hardwareMap.get(GoBildaPinpointDriver.class, "pinpoint");
 
         pinpoint.setOffsets(6.5, -2.25, DistanceUnit.INCH);
         pinpoint.setEncoderDirections(GoBildaPinpointDriver.EncoderDirection.REVERSED,
@@ -118,7 +118,7 @@ public class DriveSubsystem {
         return power;
     }
 
-    // This routine drives the robot field relative
+     //This routine drives the robot field relative
     public void fieldCentricDrive(double forward, double right, double rotate) {
         // First, convert direction being asked to drive to polar coordinates
         double theta = Math.atan2(forward, right);
