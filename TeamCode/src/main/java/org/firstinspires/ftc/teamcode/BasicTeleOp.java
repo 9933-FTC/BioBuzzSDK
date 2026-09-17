@@ -19,6 +19,7 @@ public class BasicTeleOp extends TurtleOpMode {
         shoulder.setMotorPower(gamepad2.left_stick_y);
         arm.setMotorPower(gamepad2.right_stick_x);
 
+
         if(gamepad1.start){
             //drive.seedPose(0,0,0);
         }
