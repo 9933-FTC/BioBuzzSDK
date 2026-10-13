@@ -15,14 +15,11 @@ public class TurtleOpMode extends OpMode {
 
     DriveSubsystem drive;
     ElbowSubsystem elbow;
-
     ArmSubsystem arm;
-
     ShoulderSubsystem shoulder;
 
     @Override
     public void init() {
-
         drive = new DriveSubsystem(telemetry, hardwareMap);
         elbow = new ElbowSubsystem(hardwareMap);
         arm = new ArmSubsystem(hardwareMap);
@@ -31,10 +28,7 @@ public class TurtleOpMode extends OpMode {
 
     @Override
     public void loop() {
-
-        //drive.updateOdometry();
-        //telemetry//.addLine("Robot Pose:"+ drive.getRobotPose().getX(DistanceUnit.INCH) + "," + drive.getRobotPose().getY(DistanceUnit.INCH) + "," + drive.getRobotPose().getHeading(AngleUnit.DEGREES));
-
+        drive.populateTelemetry();
     }
 
 }
