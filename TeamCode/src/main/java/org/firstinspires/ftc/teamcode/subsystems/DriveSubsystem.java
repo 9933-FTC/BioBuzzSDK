@@ -20,6 +20,8 @@ public class DriveSubsystem {
     boolean isRobotAtTarget = false;
     double autoMoveKP = 0.1,    autoTurnKP = 0.1;
     double autoMoveTolerance = 1, autoTurnTolerance = 1;
+    double forwardOffset = 0, rightOffset = 0;
+    double forwardPodOffset = 5, rightPodOffset = 2;
 
     /**
      * Assumes Drive Motors are configured as leftFront, rightFront, leftRear, and rightRear
@@ -66,15 +68,29 @@ public class DriveSubsystem {
         gyro.resetYaw();
     }
 
+    public double getForwardPose() {
+        double returnDistance = leftFront.getCurrentPosition();
+        returnDistance /= 1; //TODO: Determine Ticks Per Inch
+        returnDistance -= gyro.getRobotYawPitchRollAngles().getYaw(AngleUnit.RADIANS) * forwardPodOffset;
+        returnDistance -= forwardOffset;
+
+        return returnDistance;
+    }
+
+    public double getRightPose() {
+        double returnDistance = rightRear.getCurrentPosition();
+        returnDistance /= 1; //TODO: Determine Ticks Per Inch
+        returnDistance -= gyro.getRobotYawPitchRollAngles().getYaw(AngleUnit.RADIANS) * rightPodOffset;
+        returnDistance -= rightOffset;
+
+        return returnDistance;
+    }
+
     public void autoMove(double distanceForward, double distanceRight, double endAngle) {
         //Translational Math
-        //Convert inches to ticks
-        distanceForward *= 1; //TODO: Determine Ticks Per Inch
-        distanceRight *= 1; //TODO: Determine Ticks Per Inch
-
         //Calculate Error
-        double forwardError = distanceForward - leftFront.getCurrentPosition();
-        double rightError = distanceRight - rightRear.getCurrentPosition();
+        double forwardError = distanceForward - getForwardPose();
+        double rightError = distanceRight - getRightPose();
 
         //Calculate Power
         double forwardPower = forwardError * autoMoveKP;
@@ -103,7 +119,15 @@ public class DriveSubsystem {
 
         //Figure out completion status
         double totalDistanceError = Math.sqrt(Math.pow(forwardError, 2) + Math.pow(rightError, 2));
-        isRobotAtTarget = totalDistanceError < autoMoveTolerance && turnError < autoTurnTolerance;
+        if (totalDistanceError < autoMoveTolerance && turnError < autoTurnTolerance){
+            isRobotAtTarget = true;
+        } else if (isRobotAtTarget) {
+            //Training Wheels Protocol (Spider-Man Reference!!!)
+            forwardOffset = getForwardPose() + forwardOffset;
+            rightOffset = getRightPose() + rightOffset;
+            isRobotAtTarget = false;
+            return;
+        }
 
         //Apply Correct Power
         if (isRobotAtTarget) {
