@@ -15,6 +15,9 @@ public class BasicTeleOp extends TurtleOpMode {
     public void loop() {
         super.loop();
         drive.fieldCentricDrive(-gamepad1.left_stick_y, gamepad1.left_stick_x, gamepad1.right_stick_x);
+        elbow.setMotorPower(gamepad2.right_stick_y);
+        shoulder.setMotorPower(gamepad2.left_stick_y);
+        arm.setMotorPower(gamepad2.right_stick_x);
 
         if(gamepad1.back){
             drive.zeroGyro();
