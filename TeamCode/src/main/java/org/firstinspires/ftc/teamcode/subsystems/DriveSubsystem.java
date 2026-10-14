@@ -1,10 +1,12 @@
 package org.firstinspires.ftc.teamcode.subsystems;
 
 import com.qualcomm.hardware.gobilda.GoBildaPinpointDriver;
+import com.qualcomm.hardware.rev.RevHubOrientationOnRobot;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.HardwareMap;
+import com.qualcomm.robotcore.hardware.IMU;
 
 import org.firstinspires.ftc.robotcore.external.Telemetry;
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
@@ -13,9 +15,13 @@ import org.firstinspires.ftc.robotcore.external.navigation.Pose2D;
 
 public class DriveSubsystem {
     Telemetry telemetry;
-    GoBildaPinpointDriver pinpoint;
     DcMotorEx leftFront, rightFront, leftRear, rightRear;
+    IMU gyro ;
     boolean isRobotAtTarget = false;
+    double autoMoveKP = 0.1,    autoTurnKP = 0.1;
+    double autoMoveTolerance = 1, autoTurnTolerance = 1;
+    double forwardOffset = 0, rightOffset = 0;
+    double forwardPodOffset = 5, rightPodOffset = 2;
 
     /**
      * Assumes Drive Motors are configured as leftFront, rightFront, leftRear, and rightRear
@@ -40,41 +46,61 @@ public class DriveSubsystem {
         rightRear.setDirection(DcMotorSimple.Direction.FORWARD);
         leftRear.setDirection(DcMotorSimple.Direction.REVERSE);
 
+        gyro = hardwareMap.get(IMU.class, "imu");
+        // This needs to be changed to match the orientation on your robot
+        RevHubOrientationOnRobot.LogoFacingDirection logoDirection =
+                RevHubOrientationOnRobot.LogoFacingDirection.UP;
+        RevHubOrientationOnRobot.UsbFacingDirection usbDirection =
+                RevHubOrientationOnRobot.UsbFacingDirection.FORWARD;
 
-          pinpoint = hardwareMap.get(GoBildaPinpointDriver.class, "pinpoint");
-
-        pinpoint.setOffsets(6.5, -2.25, DistanceUnit.INCH);
-        pinpoint.setEncoderDirections(GoBildaPinpointDriver.EncoderDirection.REVERSED,
-                GoBildaPinpointDriver.EncoderDirection.FORWARD);
-        pinpoint.setEncoderResolution(GoBildaPinpointDriver.GoBildaOdometryPods.goBILDA_4_BAR_POD);
-
+        RevHubOrientationOnRobot orientationOnRobot = new
+                RevHubOrientationOnRobot(logoDirection, usbDirection);
+        gyro.initialize(new IMU.Parameters(orientationOnRobot));
     }
 
-    public void updateOdometry() {
-        pinpoint.update();
+    public void populateTelemetry() {
+        telemetry.addData("Forward Pose", leftFront.getCurrentPosition());
+        telemetry.addData("Right Pose", rightRear.getCurrentPosition());
+        telemetry.addData("Current Angle", gyro.getRobotYawPitchRollAngles().getYaw(AngleUnit.DEGREES));
     }
 
-
-
-    public void seedPose(double x, double y, double degrees) {
-        pinpoint.setPosition(new Pose2D(DistanceUnit.INCH, x, y, AngleUnit.DEGREES, degrees));
+    public void zeroGyro() {
+        gyro.resetYaw();
     }
 
-    public void driveToPose (double x, double y, double a) {
-        Pose2D targetPose = new Pose2D(DistanceUnit.INCH, x, y, AngleUnit.DEGREES, a), currentPose = pinpoint.getPosition();
+    public double getForwardPose() {
+        double returnDistance = leftFront.getCurrentPosition();
+        returnDistance /= 1; //TODO: Determine Ticks Per Inch
+        returnDistance -= gyro.getRobotYawPitchRollAngles().getYaw(AngleUnit.RADIANS) * forwardPodOffset;
+        returnDistance -= forwardOffset;
 
-        //Figure out the distance away from end pose
-        double distanceAwayX = targetPose.getX(DistanceUnit.INCH) - currentPose.getX(DistanceUnit.INCH);
-        double distanceAwayY = targetPose.getY(DistanceUnit.INCH) - currentPose.getY(DistanceUnit.INCH);
-        double distanceAway = Math.sqrt(Math.pow(distanceAwayX, 2) + Math.pow(distanceAwayY, 2));
-        double angleOfDistance = Math.atan2(distanceAwayY, distanceAwayX);
+        return returnDistance;
+    }
 
-        //Make sure it drives in a straight line
-        double translationOutput = pidCalculate(0.15, 0, 0.05, distanceAway, 0);
-        translationOutput = Math.copySign(Math.min(Math.abs(translationOutput), 1), distanceAway);
+    public double getRightPose() {
+        double returnDistance = rightRear.getCurrentPosition();
+        returnDistance /= 1; //TODO: Determine Ticks Per Inch
+        returnDistance -= gyro.getRobotYawPitchRollAngles().getYaw(AngleUnit.RADIANS) * rightPodOffset;
+        returnDistance -= rightOffset;
 
-        //Set New Rotation so it can cross -180
-        double targetAngle = targetPose.getHeading(AngleUnit.DEGREES), currentAngle = currentPose.getHeading(AngleUnit.DEGREES);
+        return returnDistance;
+    }
+
+    public void autoMove(double distanceForward, double distanceRight, double endAngle) {
+        //Translational Math
+        //Calculate Error
+        double forwardError = distanceForward - getForwardPose();
+        double rightError = distanceRight - getRightPose();
+
+        //Calculate Power
+        double forwardPower = forwardError * autoMoveKP;
+        double rightPower = rightError * autoMoveKP;
+
+
+
+        //Rotational Math
+        //Calculate Error
+        double targetAngle = endAngle, currentAngle = gyro.getRobotYawPitchRollAngles().getYaw(AngleUnit.DEGREES);
         if (Math.abs(targetAngle - currentAngle) > 180) {
             double delta = (180 - Math.abs(targetAngle));
 
@@ -84,38 +110,35 @@ public class DriveSubsystem {
                 targetAngle = -180 - delta;
             }
         }
+        double turnError = targetAngle - currentAngle;
 
-        //Power needed in each direction
-        double rotPow = -pidCalculate(.05, 0, 0, currentAngle, targetAngle);
-        double xPow = translationOutput * Math.cos(angleOfDistance);
-        double yPow = -translationOutput * Math.sin(angleOfDistance);
+        //Calculate Power
+        double turnPower = turnError * autoTurnKP;
 
-        telemetry.addLine("Distance Away : " + distanceAway);
-        telemetry.addLine("Angle: " + angleOfDistance * 180 / Math.PI);
 
-        //Apply power
-        fieldCentricDrive(xPow, yPow, rotPow);
 
-        if (distanceAway < 1 && Math.abs(currentAngle - targetAngle) < 5) {
-            fieldCentricDrive(0, 0, 0);
+        //Figure out completion status
+        double totalDistanceError = Math.sqrt(Math.pow(forwardError, 2) + Math.pow(rightError, 2));
+        if (totalDistanceError < autoMoveTolerance && turnError < autoTurnTolerance){
             isRobotAtTarget = true;
-        } else {
+        } else if (isRobotAtTarget) {
+            //Training Wheels Protocol (Spider-Man Reference!!!)
+            forwardOffset = getForwardPose() + forwardOffset;
+            rightOffset = getRightPose() + rightOffset;
             isRobotAtTarget = false;
+            return;
+        }
+
+        //Apply Correct Power
+        if (isRobotAtTarget) {
+            fieldCentricDrive(0, 0, 0);
+        } else {
+            fieldCentricDrive(forwardPower, rightPower, turnPower);
         }
     }
 
     public boolean isRobotAtTarget() {
         return isRobotAtTarget;
-    }
-    public Pose2D getRobotPose(){
-        return pinpoint.getPosition();
-    }
-
-    private double pidCalculate(double p, double i, double d, double currentPoint, double setpoint) {
-        double error = setpoint - currentPoint;
-        double power = error * p;
-
-        return power;
     }
 
      //This routine drives the robot field relative
@@ -126,7 +149,7 @@ public class DriveSubsystem {
 
         // Second, rotate angle by the angle the robot is pointing
         theta = AngleUnit.normalizeRadians(theta -
-                pinpoint.getHeading(AngleUnit.RADIANS));
+                gyro.getRobotYawPitchRollAngles().getYaw(AngleUnit.RADIANS));
 
         // Third, convert back to cartesian
         double newForward = r * Math.sin(theta);
