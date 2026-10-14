@@ -1,6 +1,5 @@
 package org.firstinspires.ftc.teamcode.subsystems;
 
-import com.qualcomm.hardware.gobilda.GoBildaPinpointDriver;
 import com.qualcomm.hardware.rev.RevHubOrientationOnRobot;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
@@ -10,12 +9,10 @@ import com.qualcomm.robotcore.hardware.IMU;
 
 import org.firstinspires.ftc.robotcore.external.Telemetry;
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
-import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
-import org.firstinspires.ftc.robotcore.external.navigation.Pose2D;
 
 public class DriveSubsystem {
     Telemetry telemetry;
-    DcMotorEx leftFront, rightFront, leftRear, rightRear;
+    DcMotorEx frontLeft, frontRight, rearLeft, rearRight;
     IMU gyro ;
     boolean isRobotAtTarget = false;
     double autoMoveKP = 0.1,    autoTurnKP = 0.1;
@@ -31,20 +28,20 @@ public class DriveSubsystem {
     public DriveSubsystem(Telemetry telemetry, HardwareMap hardwareMap) {
         this.telemetry = telemetry;
 
-        leftFront = hardwareMap.get(DcMotorEx.class, "leftFront");
-        rightFront = hardwareMap.get(DcMotorEx.class, "rightFront");
-        leftRear = hardwareMap.get(DcMotorEx.class, "leftRear");
-        rightRear = hardwareMap.get(DcMotorEx.class, "rightRear");
+        frontLeft = hardwareMap.get(DcMotorEx.class, "leftFront");
+        frontRight = hardwareMap.get(DcMotorEx.class, "rightFront");
+        rearLeft = hardwareMap.get(DcMotorEx.class, "leftRear");
+        rearRight = hardwareMap.get(DcMotorEx.class, "rightRear");
 
-        leftFront.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-        rightFront.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-        leftRear.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-        rightRear.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        frontLeft.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        frontRight.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        rearLeft.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        rearRight.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
 
-        leftFront.setDirection(DcMotorSimple.Direction.REVERSE);
-        rightFront.setDirection(DcMotorSimple.Direction.FORWARD);
-        rightRear.setDirection(DcMotorSimple.Direction.FORWARD);
-        leftRear.setDirection(DcMotorSimple.Direction.REVERSE);
+        frontLeft.setDirection(DcMotorSimple.Direction.REVERSE);
+        frontRight.setDirection(DcMotorSimple.Direction.FORWARD);
+        rearRight.setDirection(DcMotorSimple.Direction.FORWARD);
+        rearLeft.setDirection(DcMotorSimple.Direction.REVERSE);
 
         gyro = hardwareMap.get(IMU.class, "imu");
         // This needs to be changed to match the orientation on your robot
@@ -59,8 +56,8 @@ public class DriveSubsystem {
     }
 
     public void populateTelemetry() {
-        telemetry.addData("Forward Pose", leftFront.getCurrentPosition());
-        telemetry.addData("Right Pose", rightRear.getCurrentPosition());
+        telemetry.addData("Forward Pose", frontLeft.getCurrentPosition());
+        telemetry.addData("Right Pose", rearRight.getCurrentPosition());
         telemetry.addData("Current Angle", gyro.getRobotYawPitchRollAngles().getYaw(AngleUnit.DEGREES));
     }
 
@@ -69,7 +66,7 @@ public class DriveSubsystem {
     }
 
     public double getForwardPose() {
-        double returnDistance = leftFront.getCurrentPosition();
+        double returnDistance = frontLeft.getCurrentPosition();
         returnDistance /= 1; //TODO: Determine Ticks Per Inch
         returnDistance -= gyro.getRobotYawPitchRollAngles().getYaw(AngleUnit.RADIANS) * forwardPodOffset;
         returnDistance -= forwardOffset;
@@ -78,7 +75,7 @@ public class DriveSubsystem {
     }
 
     public double getRightPose() {
-        double returnDistance = rightRear.getCurrentPosition();
+        double returnDistance = rearRight.getCurrentPosition();
         returnDistance /= 1; //TODO: Determine Ticks Per Inch
         returnDistance -= gyro.getRobotYawPitchRollAngles().getYaw(AngleUnit.RADIANS) * rightPodOffset;
         returnDistance -= rightOffset;
@@ -181,9 +178,27 @@ public class DriveSubsystem {
         // We multiply by maxSpeed so that it can be set lower for outreaches
         // When a young child is driving the robot, we may not want to allow full
         // speed.
-        leftFront.setPower(maxSpeed * (frontLeftPower / maxPower));
-        rightFront.setPower(maxSpeed * (frontRightPower / maxPower));
-        leftRear.setPower(maxSpeed * (backLeftPower / maxPower));
-        rightRear.setPower(maxSpeed * (backRightPower / maxPower));
+        frontLeft.setPower(maxSpeed * (frontLeftPower / maxPower));
+        frontRight.setPower(maxSpeed * (frontRightPower / maxPower));
+        rearLeft.setPower(maxSpeed * (backLeftPower / maxPower));
+        rearRight.setPower(maxSpeed * (backRightPower / maxPower));
     }
+
+    ///////////////////////// System Test Utils ////////////////////////////////
+    public void setFrontLeftSpeed(double speed) {
+        frontLeft.setPower(speed);
+    }
+
+    public void setFrontRightSpeed(double speed) {
+        frontRight.setPower(speed);
+    }
+
+    public void setRearLeftSpeed(double speed) {
+        rearLeft.setPower(speed);
+    }
+
+    public void setRearRightSpeed(double speed) {
+        rearRight.setPower(speed);
+    }
+
 }
