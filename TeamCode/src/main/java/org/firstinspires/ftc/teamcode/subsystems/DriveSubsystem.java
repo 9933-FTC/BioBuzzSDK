@@ -14,10 +14,10 @@ public class DriveSubsystem {
     Telemetry telemetry;
     DcMotorEx frontLeft, frontRight, rearLeft, rearRight;
     IMU gyro ;
-    boolean isRobotAtTarget = false;
+    boolean isRobotAtTarget = true;
     double autoMoveKP = 0.1,    autoTurnKP = 0.1;
     double autoMoveTolerance = 1, autoTurnTolerance = 1;
-    double forwardOffset = 0, rightOffset = 0;
+    double forwardOffset = 0, rightOffset = 0, turnOffset = 0;
     double forwardPodOffset = 5, rightPodOffset = 2;
 
     /**
@@ -97,17 +97,17 @@ public class DriveSubsystem {
 
         //Rotational Math
         //Calculate Error
-        double targetAngle = endAngle, currentAngle = gyro.getRobotYawPitchRollAngles().getYaw(AngleUnit.DEGREES);
-        if (Math.abs(targetAngle - currentAngle) > 180) {
-            double delta = (180 - Math.abs(targetAngle));
 
-            if (currentAngle >= 0) {
-                targetAngle = 180 + delta;
-            } else {
-                targetAngle = -180 - delta;
-            }
+        double turnError, currentAngle;
+
+        //TODO Training Wheels Protocol (Spider-Man Reference!!!)
+        if (true) {
+            currentAngle = AngleUnit.normalizeDegrees(gyro.getRobotYawPitchRollAngles().getYaw(AngleUnit.DEGREES) + turnOffset);
+        } else {
+            currentAngle = gyro.getRobotYawPitchRollAngles().getYaw(AngleUnit.DEGREES);
         }
-        double turnError = targetAngle - currentAngle;
+
+        turnError = AngleUnit.normalizeDegrees(endAngle - currentAngle);
 
         //Calculate Power
         double turnPower = turnError * autoTurnKP;
@@ -119,9 +119,10 @@ public class DriveSubsystem {
         if (totalDistanceError < autoMoveTolerance && turnError < autoTurnTolerance){
             isRobotAtTarget = true;
         } else if (isRobotAtTarget) {
-            //Training Wheels Protocol (Spider-Man Reference!!!)
+            //TODO Training Wheels Protocol (Spider-Man Reference!!!)
             forwardOffset = getForwardPose() + forwardOffset;
             rightOffset = getRightPose() + rightOffset;
+            turnOffset = -gyro.getRobotYawPitchRollAngles().getYaw(AngleUnit.DEGREES);
             isRobotAtTarget = false;
             return;
         }
