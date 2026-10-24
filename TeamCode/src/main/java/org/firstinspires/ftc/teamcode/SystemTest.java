@@ -37,14 +37,29 @@ public class SystemTest extends TurtleOpMode {
         }
 
         telemetry.addLine("B = Front Left");
-        if (gamepad1.x) {
+        if (gamepad1.b) {
             drive.setRearRightSpeed(0.2);
         } else {
             drive.setRearRightSpeed(0);
         }
 
 
+        telemetry.addLine("Left bumper = intake");
+        if (gamepad1.left_bumper) {
+            intake.startIntake();
 
+        } else {
+            intake.stopIntake();
+        }
+
+
+        telemetry.addLine("Right bumper = randomValue");
+        if (gamepad1.right_bumper) {
+            delivery.startDelivery();
+
+        } else {
+            delivery.stopDelivery();
+        }
     }
 
 }
